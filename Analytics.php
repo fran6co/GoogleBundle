@@ -8,6 +8,10 @@ use AntiMattr\GoogleBundle\Analytics\Item;
 use AntiMattr\GoogleBundle\Analytics\Transaction;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+use UnitedPrototype\GoogleAnalytics\Session;
+use UnitedPrototype\GoogleAnalytics\Visitor;
+use UnitedPrototype\GoogleAnalytics\Tracker;
+
 class Analytics
 {
     const EVENT_QUEUE_KEY      = 'google_analytics/event/queue';
@@ -24,6 +28,7 @@ class Analytics
     private $api_key;
     private $client_id;
     private $table_id;
+    private $currentSession = array();
 
     public function __construct(ContainerInterface $container,
             array $trackers = array(), array $whitelist = array(), array $dashboard = array())
@@ -70,6 +75,8 @@ class Analytics
         if (array_key_exists($property, $this->trackers[$tracker])) {
             return $this->trackers[$tracker][$property];
         }
+
+        return null;
     }
 
     /**
@@ -91,6 +98,32 @@ class Analytics
             return false;
         }
         return $property;
+    }
+
+    public function getCurrentPageTracking($trackerKey)
+    {
+        if (null === ($property = $this->getTrackerProperty($trackerKey, 'currentPageTracking'))) {
+            return true;
+        }
+        return $property;
+    }
+
+    public function setCurrentPageTracking($trackerKey, $value)
+    {
+        $this->setTrackerProperty($trackerKey, 'currentPageTracking', $value);
+    }
+
+    public function getTrackAjax($trackerKey)
+    {
+        if (null === ($property = $this->getTrackerProperty($trackerKey, 'trackAjax'))) {
+            return false;
+        }
+        return $property;
+    }
+
+    public function setTrackAjax($trackerKey, $value)
+    {
+        $this->setTrackerProperty($trackerKey, 'trackAjax', $value);
     }
 
     /**
@@ -195,29 +228,32 @@ class Analytics
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return string $customPageView
      */
-    public function getCustomPageView()
+    public function getCustomPageView($trackerKey = null)
     {
-        $customPageView = $this->container->get('session')->get(self::CUSTOM_PAGE_VIEW_KEY);
-        $this->container->get('session')->remove(self::CUSTOM_PAGE_VIEW_KEY);
-        return $customPageView;
+        return $this->getOnce(self::CUSTOM_PAGE_VIEW_KEY, $trackerKey);
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return boolean $hasCustomPageView
      */
-    public function hasCustomPageView()
+    public function hasCustomPageView($trackerKey = null)
     {
-        return $this->has(self::CUSTOM_PAGE_VIEW_KEY);
+        return $this->has(self::CUSTOM_PAGE_VIEW_KEY, $trackerKey);
     }
 
     /**
      * @param string $customPageView
+     * @param string $trackerKey
      */
-    public function setCustomPageView($customPageView)
+    public function setCustomPageView($customPageView, $trackerKey = null)
     {
-        $this->container->get('session')->set(self::CUSTOM_PAGE_VIEW_KEY, $customPageView);
+        $this->set(self::CUSTOM_PAGE_VIEW_KEY, $customPageView, $trackerKey);
     }
 
     /**
@@ -249,92 +285,112 @@ class Analytics
 
     /**
      * @param Event $event
+     * @param string $trackerKey
      */
-    public function enqueueEvent(Event $event)
+    public function enqueueEvent(Event $event, $trackerKey = null)
     {
-        $this->add(self::EVENT_QUEUE_KEY, $event);
+        $this->add(self::EVENT_QUEUE_KEY, $event, $trackerKey);
     }
 
     /**
      * @param array $eventQueue
+     * @param string $trackerKey
      */
-    public function getEventQueue()
+    public function getEventQueue($trackerKey = null)
     {
-        return $this->getOnce(self::EVENT_QUEUE_KEY);
+        return $this->getOnce(self::EVENT_QUEUE_KEY, $trackerKey);
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return boolean $hasEventQueue
      */
-    public function hasEventQueue()
+    public function hasEventQueue($trackerKey = null)
     {
-        return $this->has(self::EVENT_QUEUE_KEY);
+        return $this->has(self::EVENT_QUEUE_KEY, $trackerKey);
     }
 
     /**
      * @param Item $item
+     * @param string $trackerKey
      */
-    public function addItem(Item $item)
+    public function addItem(Item $item, $trackerKey = null)
     {
-        $this->add(self::ITEMS_KEY, $item);
+        $this->add(self::ITEMS_KEY, $item, $trackerKey);
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return boolean $hasItems
      */
-    public function hasItems()
+    public function hasItems($trackerKey = null)
     {
-        return $this->has(self::ITEMS_KEY);
+        return $this->has(self::ITEMS_KEY, $trackerKey);
     }
 
     /**
      * @param Item $item
+     * @param string $trackerKey
+     *
      * @return boolean $hasItem
      */
-    public function hasItem(Item $item)
+    public function hasItem(Item $item, $trackerKey = null)
     {
-        if (!$this->hasItems()) {
+        if (!$this->hasItems($trackerKey)) {
             return false;
         }
-        $items = $this->getItemsFromSession();
+        $items = $this->getItemsFromSession($trackerKey);
+
         return in_array($item, $items, true);
     }
 
     /**
      * @param array $items
+     * @param string $trackerKey
      */
-    public function setItems($items)
+    public function setItems($items, $trackerKey = null)
     {
-        $this->container->get('session')->set(self::ITEMS_KEY, $items);
+        $this->set(self::ITEMS_KEY, $items, $trackerKey);
     }
 
-    public function getItems()
+    /**
+     * @param string $trackerKey
+     *
+     * @return array
+     */
+    public function getItems($trackerKey = null)
     {
-        return $this->getOnce(self::ITEMS_KEY);
+        return $this->getOnce(self::ITEMS_KEY, $trackerKey);
     }
 
     /**
      * @param string $pageView
+     * @param string $trackerKey
      */
-    public function enqueuePageView($pageView)
+    public function enqueuePageView($pageView, $trackerKey = null)
     {
-        $this->add(self::PAGE_VIEW_QUEUE_KEY, $pageView);
+        $this->add(self::PAGE_VIEW_QUEUE_KEY, $pageView, $trackerKey);
     }
 
     /**
      * @param array $pageViewQueue
+     * @param string $trackerKey
      */
-    public function getPageViewQueue()
+    public function getPageViewQueue($trackerKey = null)
     {
-        return $this->getOnce(self::PAGE_VIEW_QUEUE_KEY);
+        return $this->getOnce(self::PAGE_VIEW_QUEUE_KEY, $trackerKey);
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return boolean $hasPageViewQueue
      */
-    public function hasPageViewQueue()
+    public function hasPageViewQueue($trackerKey = null)
     {
-        return $this->has(self::PAGE_VIEW_QUEUE_KEY);
+        return $this->has(self::PAGE_VIEW_QUEUE_KEY, $trackerKey);
     }
 
     /**
@@ -352,9 +408,11 @@ class Analytics
      *
      * @return string $requestUri
      */
-    public function getRequestUri()
+    public function getRequestUri($request = null)
     {
-        $request = $this->getRequest();
+        if (null === $request) {
+            $request = $this->getRequest();
+        }
         $path = $request->getPathInfo();
 
         if (!$this->pageViewsWithBaseUrl) {
@@ -382,31 +440,59 @@ class Analytics
     /**
      * @return array $trackers
      */
-    public function getTrackers(array $trackers = array())
+    public function getTrackers(array $trackerKeys = array())
     {
-        if (!empty($trackers)) {
-            $trackers = array();
-            foreach ($trackers as $key) {
+        $trackers = array();
+
+        if (!empty($trackerKeys)) {
+            foreach ($trackerKeys as $key) {
                 if (isset($this->trackers[$key])) {
                     $trackers[$key] = $this->trackers[$key];
                 }
             }
-            return $trackers;
         } else {
-            return $this->trackers;
+            $trackers = $this->trackers;
         }
+
+        return array_filter($trackers, function($tracker) {
+            return !isset($tracker['serverSide']) || !$tracker['serverSide'];
+        });
     }
 
     /**
+     * @return array $trackers
+     */
+    public function getServerTrackers(array $trackerKeys = array())
+    {
+        $trackers = array();
+
+        if (!empty($trackerKeys)) {
+            foreach ($trackerKeys as $key) {
+                if (isset($this->trackers[$key])) {
+                    $trackers[$key] = $this->trackers[$key];
+                }
+            }
+        } else {
+            $trackers = $this->trackers;
+        }
+
+        return array_filter($trackers, function($tracker) {
+            return isset($tracker['serverSide']) && $tracker['serverSide'];
+        });
+    }
+
+    /**
+     * @param string $trackerKey
+     *
      * @return boolean $isTransactionValid
      */
-    public function isTransactionValid()
+    public function isTransactionValid($trackerKey = null)
     {
-        if (!$this->hasTransaction() || (null === $this->getTransactionFromSession()->getOrderNumber())) {
+        if (!$this->hasTransaction($trackerKey) || (null === $this->getTransactionFromSession($trackerKey)->getOrderNumber())) {
             return false;
         }
-        if ($this->hasItems()) {
-            $items = $this->getItemsFromSession();
+        if ($this->hasItems($trackerKey)) {
+            $items = $this->getItemsFromSession($trackerKey);
             foreach ($items as $item) {
                 if (!$item->getOrderNumber() || !$item->getSku() || !$item->getPrice() || !$item->getQuantity()) {
                     return false;
@@ -417,86 +503,155 @@ class Analytics
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return Transaction $transaction
      */
-    public function getTransaction()
+    public function getTransaction($trackerKey = null)
     {
-        $transaction = $this->getTransactionFromSession();
-        $this->container->get('session')->remove(self::TRANSACTION_KEY);
-        return $transaction;
+        return $this->getOnce(self::TRANSACTION_KEY, $trackerKey);
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return boolean $hasTransaction
      */
-    public function hasTransaction()
+    public function hasTransaction($trackerKey = null)
     {
-        return $this->has(self::TRANSACTION_KEY);
+        return $this->has(self::TRANSACTION_KEY, $trackerKey);
     }
 
     /**
      * @param Transaction $transaction
+     * @param string $trackerKey
      */
-    public function setTransaction(Transaction $transaction)
+    public function setTransaction(Transaction $transaction, $trackerKey = null)
     {
-        $this->container->get('session')->set(self::TRANSACTION_KEY, $transaction);
+        $this->set(self::TRANSACTION_KEY, $transaction, $trackerKey);
     }
 
     /**
      * @param string $key
      * @param mixed $value
+     * @param string $trackerKey
      */
-    private function add($key, $value)
+    private function add($key, $value, $trackerKey = null)
     {
-        $bucket = $this->container->get('session')->get($key, array());
+        if (null !== $trackerKey) {
+            $key .= '/' . $trackerKey;
+        }
+
+        $bucket = array();
+
+        if (isset($this->currentSession[$key])) {
+            $bucket = $this->currentSession[$key];
+        }
+
+        $bucket = $this->container->get('session')->get($key, $bucket);
         $bucket[] = $value;
+
+        $this->currentSession[$key] = $bucket;
+
         $this->container->get('session')->set($key, $bucket);
     }
 
     /**
      * @param string $key
+     * @param mixed $value
+     * @param string $trackerKey
+     */
+    private function set($key, $value, $trackerKey = null)
+    {
+        if (null !== $trackerKey) {
+            $key .= '/' . $trackerKey;
+        }
+
+        $this->currentSession[$key] = $value;
+        $this->container->get('session')->set($key, $value);
+    }
+
+    /**
+     * @param string $key
+     * @param string $trackerKey
+     *
      * @return boolean $hasKey
      */
-    private function has($key)
+    private function has($key, $trackerKey = null)
     {
-        $bucket = $this->container->get('session')->get($key, array());
+        if (null !== $trackerKey) {
+            $key .= '/' . $trackerKey;
+        }
+
+        $bucket = array();
+
+        if (isset($this->currentSession[$key])) {
+            $bucket = $this->currentSession[$key];
+        }
+
+        $bucket = $this->container->get('session')->get($key, $bucket);
+
         return !empty($bucket);
     }
 
     /**
      * @param string $key
+     * @param string $trackerKey
+     *
      * @return array $value
      */
-    private function get($key)
+    private function get($key, $trackerKey = null)
     {
-        return $this->container->get('session')->get($key, array());
+        if (null !== $trackerKey) {
+            $key .= '/' . $trackerKey;
+        }
+
+        $value = array();
+
+        if (isset($this->currentSession[$key])) {
+            $value = $this->currentSession[$key];
+        }
+
+        return $this->container->get('session')->get($key, $value);
     }
 
     /**
      * @param string $key
+     * @param string $trackerKey
+     *
      * @return array $value
      */
-    private function getOnce($key)
+    private function getOnce($key, $trackerKey = null)
     {
-        $value = $this->container->get('session')->get($key, array());
+        $value = $this->get($key, $trackerKey);
+
+        if (null !== $trackerKey) {
+            $key .= '/' . $trackerKey;
+        }
+
         $this->container->get('session')->remove($key);
+
         return $value;
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return array $items
      */
-    private function getItemsFromSession()
+    private function getItemsFromSession($trackerKey = null)
     {
-        return $this->get(self::ITEMS_KEY);
+        return $this->get(self::ITEMS_KEY, $trackerKey);
     }
 
     /**
+     * @param string $trackerKey
+     *
      * @return Transaction $transaction
      */
-    private function getTransactionFromSession()
+    private function getTransactionFromSession($trackerKey = null)
     {
-        return $this->container->get('session')->get(self::TRANSACTION_KEY);
+        return $this->get(self::TRANSACTION_KEY, $trackerKey);
     }
 
     /**
@@ -523,5 +678,135 @@ class Analytics
     public function getTableId()
     {
         return $this->table_id;
+    }
+
+    public function serverSpread($request, $visitor, $trackingSession)
+    {
+        $trackers = array();
+
+        foreach ($this->getServerTrackers() as $key => $trackerConfig) {
+            if ($request->isXmlHttpRequest() && !$this->getTrackAjax($key)) {
+                continue;
+            }
+
+            $tracker = new Tracker($trackerConfig['accountId'], $trackerConfig['domain']);
+
+            $tracker->setAllowHash($this->getAllowHash($key));
+
+            foreach ($this->getCustomVariables() as $customVariable) {
+                $tracker->addCustomVariable(new \UnitedPrototype\GoogleAnalytics\CustomVariable(
+                    $customVariable->getIndex(),
+                    $customVariable->getName(),
+                    $customVariable->getValue(),
+                    $customVariable->getScope()
+                ));
+            }
+
+            $trackers[$key] = $tracker;
+        }
+
+        foreach ($this->getPageViewQueue() as $pageView) {
+            foreach ($trackers as $tracker) {
+                $tracker->trackPageview(new \UnitedPrototype\GoogleAnalytics\Page($pageView), $trackingSession, $visitor);
+            }
+        }
+
+        if ($this->hasCustomPageView()) {
+            foreach ($trackers as $tracker) {
+                $tracker->trackPageview(new \UnitedPrototype\GoogleAnalytics\Page($this->getCustomPageView()), $trackingSession, $visitor);
+            }
+        } else {
+            foreach ($trackers as $key => $tracker) {
+                if ($this->getCurrentPageTracking($key)) {
+                    $tracker->trackPageview(new \UnitedPrototype\GoogleAnalytics\Page($this->getRequestUri($request)), $trackingSession, $visitor);
+                }
+            }
+        }
+
+        if ($this->isTransactionValid()) {
+            $transactionConfig = $this->getTransaction();
+
+            $transaction = new \UnitedPrototype\GoogleAnalytics\Transaction();
+
+            $transaction->setAffiliation($transactionConfig->getAffiliation());
+            $transaction->setCity($transactionConfig->getCity());
+            $transaction->setCountry($transactionConfig->getCountry());
+            $transaction->setOrderId($transactionConfig->getOrderNumber());
+            $transaction->setShipping($transactionConfig->getShipping());
+            $transaction->setTax($transactionConfig->getTax());
+            $transaction->setTotal($transactionConfig->getTotal());
+            $transaction->setRegion($transactionConfig->getState());
+
+            foreach ($this->getItems() as $itemConfig) {
+                $item = new \UnitedPrototype\GoogleAnalytics\Item();
+
+                $item->setName($itemConfig->getName());
+                $item->setOrderId($itemConfig->getOrderNumber());
+                $item->setPrice($itemConfig->getPrice());
+                $item->setQuantity($itemConfig->getQuantity());
+                $item->setSku($itemConfig->getSku());
+                $item->setVariation($itemConfig->getCategory());
+
+                $transaction->addItem($item);
+            }
+
+            foreach ($trackers as $tracker) {
+                $tracker->trackTransaction($transaction, $trackingSession, $visitor);
+            }
+        }
+
+        foreach ($this->getEventQueue() as $eventConfig) {
+            $event = new \UnitedPrototype\GoogleAnalytics\Event($eventConfig->getCategory(), $eventConfig->getAction(), $eventConfig->getLabel(), $eventConfig->getValue());
+
+            foreach ($trackers as $tracker) {
+                $tracker->trackEvent($event, $trackingSession, $visitor);
+            }
+        }
+
+        foreach ($trackers as $key => $tracker) {
+            foreach ($this->getPageViewQueue($key) as $pageView) {
+                $tracker->trackPageview(new \UnitedPrototype\GoogleAnalytics\Page($pageView), $trackingSession, $visitor);
+            }
+
+            if ($this->hasCustomPageView($key)) {
+                $tracker->trackPageview(new \UnitedPrototype\GoogleAnalytics\Page($this->getCustomPageView()), $trackingSession, $visitor);
+            }
+
+            if ($this->isTransactionValid($key)) {
+                $transactionConfig = $this->getTransaction($key);
+
+                $transaction = new \UnitedPrototype\GoogleAnalytics\Transaction();
+
+                $transaction->setAffiliation($transactionConfig->getAffiliation());
+                $transaction->setCity($transactionConfig->getCity());
+                $transaction->setCountry($transactionConfig->getCountry());
+                $transaction->setOrderId($transactionConfig->getOrderNumber());
+                $transaction->setShipping($transactionConfig->getShipping());
+                $transaction->setTax($transactionConfig->getTax());
+                $transaction->setTotal($transactionConfig->getTotal());
+                $transaction->setRegion($transactionConfig->getState());
+
+                foreach ($this->getItems($key) as $itemConfig) {
+                    $item = new \UnitedPrototype\GoogleAnalytics\Item();
+
+                    $item->setName($itemConfig->getName());
+                    $item->setOrderId($itemConfig->getOrderNumber());
+                    $item->setPrice($itemConfig->getPrice());
+                    $item->setQuantity($itemConfig->getQuantity());
+                    $item->setSku($itemConfig->getSku());
+                    $item->setVariation($itemConfig->getCategory());
+
+                    $transaction->addItem($item);
+                }
+
+                $tracker->trackTransaction($transaction, $trackingSession, $visitor);
+            }
+
+            foreach ($this->getEventQueue($key) as $eventConfig) {
+                $event = new \UnitedPrototype\GoogleAnalytics\Event($eventConfig->getCategory(), $eventConfig->getAction(), $eventConfig->getLabel(), $eventConfig->getValue());
+
+                $tracker->trackEvent($event, $trackingSession, $visitor);
+            }
+        }
     }
 }

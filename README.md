@@ -38,9 +38,12 @@ the application's `config.yml` file:
                     domain:    .mydomain.com
                     trackPageLoadTime: true
 
+If you want to track from the server side you can add the flag serverSide: true in the tracker.
+
 #### View
 
 Include the Google Analytics Async template in the `head` tag or just before the `</body>` of your layout (The template will lazy load _gaq).
+This step is needed only if you have client side trackers. Server side trackers are handled automatically when the Response is issued.
 
 With twig:
 

@@ -36,6 +36,11 @@ class AnalyticsHelper extends Helper
         return $this->analytics->getAllowLinker($trackerKey);
     }
 
+    public function getCurrentPageTracking($trackerKey)
+    {
+        return $this->analytics->getCurrentPageTracking($trackerKey);
+    }
+
     public function getTrackerName($trackerKey)
     {
         if ($this->analytics->getIncludeNamePrefix($trackerKey)) {
@@ -49,14 +54,14 @@ class AnalyticsHelper extends Helper
         return $this->analytics->getSiteSpeedSampleRate($trackerKey);
     }
 
-    public function hasCustomPageView()
+    public function hasCustomPageView($trackerKey = null)
     {
-        return $this->analytics->hasCustomPageView();
+        return $this->analytics->hasCustomPageView($trackerKey);
     }
 
-    public function getCustomPageView()
+    public function getCustomPageView($trackerKey = null)
     {
-        return $this->analytics->getCustomPageView();
+        return $this->analytics->getCustomPageView($trackerKey);
     }
 
     public function hasCustomVariables()
@@ -69,24 +74,24 @@ class AnalyticsHelper extends Helper
         return $this->analytics->getCustomVariables();
     }
 
-    public function hasEventQueue()
+    public function hasEventQueue($trackerKey = null)
     {
-        return $this->analytics->hasEventQueue();
+        return $this->analytics->hasEventQueue($trackerKey);
     }
 
-    public function getEventQueue()
+    public function getEventQueue($trackerKey = null)
     {
-        return $this->analytics->getEventQueue();
+        return $this->analytics->getEventQueue($trackerKey);
     }
 
-    public function hasItems()
+    public function hasItems($trackerKey = null)
     {
-        return $this->analytics->hasItems();
+        return $this->analytics->hasItems($trackerKey);
     }
 
-    public function getItems()
+    public function getItems($trackerKey = null)
     {
-        return $this->analytics->getItems();
+        return $this->analytics->getItems($trackerKey);
     }
 
     public function getRequestUri()
@@ -94,14 +99,14 @@ class AnalyticsHelper extends Helper
         return $this->analytics->getRequestUri();
     }
 
-    public function hasPageViewQueue()
+    public function hasPageViewQueue($trackerKey = null)
     {
-        return $this->analytics->hasPageViewQueue();
+        return $this->analytics->hasPageViewQueue($trackerKey);
     }
 
-    public function getPageViewQueue()
+    public function getPageViewQueue($trackerKey = null)
     {
-        return $this->analytics->getPageViewQueue();
+        return $this->analytics->getPageViewQueue($trackerKey);
     }
 
     public function getSourceHttps()
@@ -139,14 +144,14 @@ class AnalyticsHelper extends Helper
         return $this->analytics->getTableId();
     }
 
-    public function isTransactionValid()
+    public function isTransactionValid($trackerKey = null)
     {
-        return $this->analytics->isTransactionValid();
+        return $this->analytics->isTransactionValid($trackerKey);
     }
 
-    public function getTransaction()
+    public function getTransaction($trackerKey = null)
     {
-        return $this->analytics->getTransaction();
+        return $this->analytics->getTransaction($trackerKey);
     }
 
     public function getName()

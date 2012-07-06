@@ -31,6 +31,11 @@
             <tag name="twig.extension" />
             <argument type="service" id="templating.helper.google_analytics" />
         </service>
+
+        <service id="google.analytics.listener.server_side_trackers" class="AntiMattr\GoogleBundle\EventListener\ServerSideTrackersListener">
+            <argument type="service" id="google.analytics" />
+            <tag name="kernel.event_listener" event="kernel.terminate" method="onKernelTerminate" />
+        </service>
 	</services>
 
 </container>
