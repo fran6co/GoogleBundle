@@ -21,14 +21,14 @@ class ServerSideTrackersListener implements EventSubscriberInterface
 
     public function onKernelTerminate(PostResponseEvent $event)
     {
-        $request = $event->getRequest();
+        if ($request = $event->getRequest()) {
+            $trackingSession = $this->getTrackingSession($request);
+            $visitor = $this->getVisitor($request);
 
-        $trackingSession = $this->getTrackingSession($request);
-        $visitor = $this->getVisitor($request);
+            $visitor->addSession($trackingSession);
 
-        $visitor->addSession($trackingSession);
-
-        $this->analytics->serverSpread($request, $visitor, $trackingSession);
+            $this->analytics->serverSpread($request, $visitor, $trackingSession);
+        }
     }
 
     private function getVisitor(Request $request)
