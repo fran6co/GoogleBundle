@@ -35,7 +35,7 @@ class ServerSideTrackersListener implements EventSubscriberInterface
     {
         $visitor = new Visitor();
 
-        if ($request->getSession()->has('google_analytics/visitor')) {
+        if ($request->getSession() && $request->getSession()->has('google_analytics/visitor')) {
             $visitor = $request->getSession()->get('google_analytics/visitor');
         } elseif ($request->cookies->has('__utma')) {
             $visitor->fromUtma($request->cookies->get('__utma'));
@@ -43,7 +43,9 @@ class ServerSideTrackersListener implements EventSubscriberInterface
             $visitor->fromServerVar($_SERVER);
         }
 
-        $request->getSession()->set('google_analytics/visitor', $visitor);
+        if ($request->getSession()) {
+            $request->getSession()->set('google_analytics/visitor', $visitor);
+        }
 
         return $visitor;
     }
@@ -52,13 +54,15 @@ class ServerSideTrackersListener implements EventSubscriberInterface
     {
         $session = new Session();
 
-        if ($request->getSession()->has('google_analytics/tracking_session')) {
+        if ($request->getSession() && $request->getSession()->has('google_analytics/tracking_session')) {
             $session = $request->getSession()->get('google_analytics/tracking_session');
         } elseif ($request->cookies->has('__utmb')) {
             $session->fromUtmb($request->cookies->get('__utmb'));
         }
 
-        $request->getSession()->set('google_analytics/tracking_session', $session);
+        if ($request->getSession()) {
+            $request->getSession()->set('google_analytics/tracking_session', $session);
+        }
 
         return $session;
     }
